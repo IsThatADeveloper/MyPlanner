@@ -47,11 +47,6 @@
       text-align: center;
       margin-top: 20px;
     }
-
-    .calendar .load-button {
-      text-align: center;
-      margin-top: 10px;
-    }
   </style>
 </head>
 <body>
@@ -60,10 +55,7 @@
     <div class="months"></div>
     <div class="save-button">
       <button onclick="saveEvents()">Save</button>
-    </div>
-    <div class="load-button">
-      <input type="file" id="fileInput" style="display: none;" accept=".json">
-      <button onclick="chooseFile()">Load</button>
+      <button onclick="loadEventsFromCookies()">Load</button>
     </div>
   </div>
 
@@ -145,11 +137,11 @@
       const days = document.querySelectorAll('.calendar .day');
       days.forEach(day => {
         day.addEventListener('click', () => {
-          const event = prompt('Enter an event for this day:');
-          if (event) {
+          const eventText = prompt('Enter an event for this day:');
+          if (eventText) {
             const eventDiv = document.createElement('div');
             eventDiv.classList.add('event');
-            eventDiv.textContent = event;
+            eventDiv.textContent = eventText;
             day.appendChild(eventDiv);
             
             // Get the current year and month
@@ -160,14 +152,14 @@
             if (!events[currentYear]) events[currentYear] = {};
             if (!events[currentYear][currentMonth]) events[currentYear][currentMonth] = {};
             if (!events[currentYear][currentMonth][day.textContent]) events[currentYear][currentMonth][day.textContent] = [];
-            events[currentYear][currentMonth][day.textContent].push(event);
+            events[currentYear][currentMonth][day.textContent].push(eventText);
           }
         });
         
         day.addEventListener('contextmenu', e => {
           e.preventDefault();
-          const events = day.querySelectorAll('.event');
-          if (events.length > 0) {
+          const eventElements = day.querySelectorAll('.event');
+          if (eventElements.length > 0) {
             const clickedEvent = e.target.closest('.event');
             if (clickedEvent) {
               const confirmRemove = confirm('Are you sure you want to remove this event?');
@@ -201,41 +193,34 @@
       });
     }
 
-    // Save events to the events object
+    // Save events to cookies
     function saveEvents() {
       // Convert the events object to a string
       const eventsString = JSON.stringify(events);
 
-      // Create a new HTML element with the events data
-      const element = document.createElement('a');
-      element.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(eventsString));
-      element.setAttribute('download', 'calendar-data.json');
-      element.style.display = 'none';
-
-      // Add the element to the document
-      document.body.appendChild(element);
-
-      // Trigger the click event
-      element.click();
-
-      // Remove the element from the document
-      document.body.removeChild(element);
+      // Save the events string to a cookie
+      document.cookie = `calendar_events=${encodeURIComponent(eventsString)}; expires=Thu, 31 Dec 2099 23:59:59 GMT`;
     }
 
-    // Choose a file and load events from it
-    function chooseFile() {
-      const fileInput = document.getElementById('fileInput');
-      fileInput.click();
-      fileInput.addEventListener('change', () => {
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const contents = e.target.result;
-          events = JSON.parse(contents);
+    // Load events from cookies
+    function loadEventsFromCookies() {
+      const cookies = document.cookie.split(';');
+      let eventsString = null;
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.startsWith('calendar_events=')) {
+          eventsString = decodeURIComponent(cookie.substring('calendar_events='.length));
+          break;
+        }
+      }
+      if (eventsString) {
+        try {
+          events = JSON.parse(eventsString);
           renderCalendar();
-        };
-        reader.readAsText(file);
-      });
+        } catch (error) {
+          console.error('Error parsing cookie:', error);
+        }
+      }
     }
   </script>
 </body>
