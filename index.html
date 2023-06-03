@@ -222,7 +222,9 @@
           deleteOption.textContent = 'Delete Task';
           deleteOption.addEventListener('click', () => {
             removeTask(month, day, taskText);
-            document.body.removeChild(taskOptions); // Close dropdown after deleting task
+            if (document.body.contains(taskOptions)) {
+              document.body.removeChild(taskOptions);
+            }
           });
 
           optionList.appendChild(deleteOption);
@@ -233,7 +235,9 @@
           // Handle click outside the dropdown to close it
           const handleClickOutside = (e) => {
             if (!taskOptions.contains(e.target)) {
-              document.body.removeChild(taskOptions);
+              if (document.body.contains(taskOptions)) {
+                document.body.removeChild(taskOptions);
+              }
               document.removeEventListener('click', handleClickOutside);
             }
           };
