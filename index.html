@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Editable Calendar</title>
+  <style>
+    /* CSS styles for the calendar */
+    .calendar {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      font-family: Arial, sans-serif;
+    }
+    
+    .calendar .header {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    
+    .calendar .days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+    
+    .calendar .day {
+      text-align: center;
+      padding: 10px;
+      background-color: #eee;
+    }
+    
+    .calendar .day:hover {
+      background-color: #ccc;
+      cursor: pointer;
+    }
+    
+    .calendar .event {
+      background-color: #ffcc00;
+      color: #fff;
+      padding: 2px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="calendar">
+    <div class="header">Editable Calendar</div>
+    <div class="days"></div>
+  </div>
+
+  <script>
+    // JavaScript code to populate and handle the calendar
+    
+    // Get the days container element
+    const daysContainer = document.querySelector('.calendar .days');
+    
+    // Create an array of weekday names
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    // Get the current date
+    const currentDate = new Date();
+    
+    // Get the current month
+    const currentMonth = currentDate.getMonth();
+    
+    // Get the current year
+    const currentYear = currentDate.getFullYear();
+    
+    // Get the number of days in the current month
+    const numDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    // Load events from Local Storage
+    let events = JSON.parse(localStorage.getItem('calendarEvents')) || {};
+    
+    // Add the weekday names to the calendar
+    for (let i = 0; i < weekdays.length; i++) {
+      const day = document.createElement('div');
+      day.classList.add('day');
+      day.textContent = weekdays[i];
+      daysContainer.appendChild(day);
+    }
+    
+    // Add the days to the calendar
+    for (let i = 1; i <= numDays; i++) {
+      const day = document.createElement('div');
+      day.classList.add('day');
+      day.textContent = i;
+      
+      // Check if there are events for this day
+      if (events[currentYear] && events[currentYear][currentMonth] && events[currentYear][currentMonth][i]) {
+        const dayEvents = events[currentYear][currentMonth][i];
+        dayEvents.forEach(event => {
+          const eventDiv = document.createElement('div');
+          eventDiv.classList.add('event');
+          eventDiv.textContent = event;
+          day.appendChild(eventDiv);
+        });
+      }
+      
+      daysContainer.appendChild(day);
+    }
+    
+    // Add event listeners to the days
+    const days = document.querySelectorAll('.calendar .day');
+    days.forEach(day => {
+      day.addEventListener('click', () => {
+        const event = prompt('Enter an event for this day:');
+        if (event) {
+          const eventDiv = document.createElement('div');
+          eventDiv.classList.add('event');
+          eventDiv.textContent = event;
+          day.appendChild(eventDiv);
+          
+          // Store the event in Local Storage
+          if (!events[currentYear]) events[currentYear] = {};
+          if (!events[currentYear][currentMonth]) events[currentYear][currentMonth] = {};
+          if (!events[currentYear][currentMonth][day.textContent]) events[currentYear][currentMonth][day.textContent] = [];
+          events[currentYear][currentMonth][day.textContent].push(event);
+          localStorage.setItem('calendarEvents', JSON.stringify(events));
+        }
+      });
+      
+      day.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        const events = day.querySelectorAll('.event');
+        if (events.length > 0) {
+          const clickedEvent = e.target.closest('.event');
+          if (clickedEvent) {
+            const confirmRemove = confirm('Are you sure you want to remove this event?');
+            if (confirmRemove) {
+              clickedEvent.remove();
+              
+              // Remove the event from Local Storage
+              const eventText = clickedEvent.textContent;
+              const eventDay = day.textContent;
+              const eventMonth = currentMonth;
+              const eventYear = currentYear;
+              if (events[eventYear] && events[eventYear][eventMonth] && events[eventYear][eventMonth][eventDay]) {
+                const index = events[eventYear][eventMonth][eventDay].indexOf(eventText);
+                if (index !== -1) {
+                  events[eventYear][eventMonth][eventDay].splice(index, 1);
+                  if (events[eventYear][eventMonth][eventDay].length === 0) {
+                    delete events[eventYear][eventMonth][eventDay];
+                  }
+                  if (Object.keys(events[eventYear][eventMonth]).length === 0) {
+                    delete events[eventYear][eventMonth];
+                  }
+                  if (Object.keys(events[eventYear]).length === 0) {
+                    delete events[eventYear];
+                  }
+                  localStorage.setItem('calendarEvents', JSON.stringify(events));
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
