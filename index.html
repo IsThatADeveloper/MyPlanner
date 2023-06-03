@@ -1,227 +1,214 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Editable Calendar</title>
+  <title>Task Calendar</title>
   <style>
-    /* CSS styles for the calendar */
-    .calendar {
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
+    body {
       font-family: Arial, sans-serif;
-      margin-bottom: 20px;
+      margin: 0;
+      overflow: hidden;
     }
-    
-    .calendar .header {
+
+    .animated-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background-image: url("https://wallpaper.dog/large/822006.jpg");
+      background-repeat: no-repeat;
+      background-size: cover;
+      animation: backgroundAnimation 20s infinite linear;
+    }
+
+    @keyframes backgroundAnimation {
+      0% {
+        background-position: 0% 0%;
+      }
+      50% {
+        background-position: 100% 100%;
+      }
+      100% {
+        background-position: 0% 0%;
+      }
+    }
+
+    .calendar {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #FFFFFF;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      border-radius: 5px;
+      overflow-y: auto;
+      height: calc(100vh - 40px); /* Adjust the height to fit the screen */
+    }
+
+    h1 {
       text-align: center;
-      font-size: 24px;
       margin-bottom: 20px;
     }
-    
-    .calendar .days {
+
+    .month {
+      margin-bottom: 20px;
+    }
+
+    .month-name {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .days {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 5px;
     }
-    
-    .calendar .day {
-      text-align: center;
+
+    .day {
+      border: 1px solid #E0E0E0;
       padding: 10px;
-      background-color: #eee;
+      text-align: center;
     }
-    
-    .calendar .day:hover {
-      background-color: #ccc;
-      cursor: pointer;
-    }
-    
-    .calendar .event {
-      background-color: #ffcc00;
-      color: #fff;
-      padding: 2px;
-      font-size: 12px;
+
+    .day:hover {
+      background-color: #F5F5F5;
       cursor: pointer;
     }
 
-    .calendar .save-button {
-      text-align: center;
+    .task-list {
+      margin-top: 10px;
+    }
+
+    .task {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    .color-code {
+      width: 20px;
+      height: 20px;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    .save-button {
+      display: flex;
+      justify-content: center;
       margin-top: 20px;
     }
   </style>
 </head>
 <body>
+  <div class="animated-background"></div>
   <div class="calendar">
-    <div class="header">Editable Calendar</div>
-    <div class="months"></div>
+    <h1>Task Calendar</h1>
+    <div id="calendar-container"></div>
     <div class="save-button">
-      <button onclick="saveEvents()">Save</button>
-      <button onclick="loadEventsFromCookies()">Load</button>
+      <button onclick="saveCalendar()">Save</button>
     </div>
   </div>
 
   <script>
-    // JavaScript code to populate and handle the calendar
+    // Check if there is saved calendar data
+    const savedCalendar = localStorage.getItem('calendarData');
+    let calendarData = savedCalendar ? JSON.parse(savedCalendar) : {};
 
-    // Create an array of month names
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    
-    // Define the events object to store tasks
-    let events = {};
+    // Create the calendar
+    function createCalendar() {
+      const calendarContainer = document.getElementById('calendar-container');
+      calendarContainer.innerHTML = '';
 
-    // Load events from the events object
-    renderCalendar();
+      for (let month = 1; month <= 12; month++) {
+        const monthElement = document.createElement('div');
+        monthElement.classList.add('month');
 
-    // Render the calendar
-    function renderCalendar() {
-      // Get the months container element
-      const monthsContainer = document.querySelector('.calendar .months');
-      monthsContainer.innerHTML = '';
+        const monthNameElement = document.createElement('div');
+        monthNameElement.classList.add('month-name');
+        monthNameElement.textContent = getMonthName(month);
+        monthElement.appendChild(monthNameElement);
 
-      // Loop through each month
-      for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
-        const monthContainer = document.createElement('div');
-        monthContainer.classList.add('month');
-        
-        // Create header for the month
-        const header = document.createElement('div');
-        header.classList.add('header');
-        header.textContent = months[monthIndex];
-        monthContainer.appendChild(header);
-        
-        // Get the current year
-        const currentYear = new Date().getFullYear();
-        
-        // Get the number of days in the current month
-        const numDays = new Date(currentYear, monthIndex + 1, 0).getDate();
-        
-        // Create days container for the month
-        const daysContainer = document.createElement('div');
-        daysContainer.classList.add('days');
-        
-        // Add the weekday names to the calendar
-        for (let i = 0; i < 7; i++) {
-          const day = document.createElement('div');
-          day.classList.add('day');
-          day.textContent = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i];
-          daysContainer.appendChild(day);
-        }
-        
-        // Add the days to the calendar
-        for (let i = 1; i <= numDays; i++) {
-          const day = document.createElement('div');
-          day.classList.add('day');
-          day.textContent = i;
-          
-          // Check if there are events for this day
-          if (events[currentYear] && events[currentYear][monthIndex] && events[currentYear][monthIndex][i]) {
-            const dayEvents = events[currentYear][monthIndex][i];
-            dayEvents.forEach(event => {
-              const eventDiv = document.createElement('div');
-              eventDiv.classList.add('event');
-              eventDiv.textContent = event;
-              day.appendChild(eventDiv);
+        const daysElement = document.createElement('div');
+        daysElement.classList.add('days');
+        monthElement.appendChild(daysElement);
+
+        for (let day = 1; day <= getDaysInMonth(month); day++) {
+          const dayElement = document.createElement('div');
+          dayElement.classList.add('day');
+          dayElement.textContent = day;
+          dayElement.addEventListener('click', () => addTask(month, day));
+          daysElement.appendChild(dayElement);
+
+          if (calendarData[month] && calendarData[month][day]) {
+            const taskList = document.createElement('div');
+            taskList.classList.add('task-list');
+            dayElement.appendChild(taskList);
+
+            calendarData[month][day].forEach(task => {
+              const taskElement = document.createElement('div');
+              taskElement.classList.add('task');
+              const colorCodeElement = document.createElement('span');
+              colorCodeElement.classList.add('color-code');
+              colorCodeElement.style.backgroundColor = task.color;
+              taskElement.appendChild(colorCodeElement);
+              taskElement.innerHTML += task.text;
+              taskElement.addEventListener('contextmenu', (event) => removeTask(event, month, day, task));
+              taskList.appendChild(taskElement);
             });
           }
-          
-          daysContainer.appendChild(day);
         }
-        
-        monthContainer.appendChild(daysContainer);
-        monthsContainer.appendChild(monthContainer);
-      }
-      
-      // Add event listeners to the days
-      const days = document.querySelectorAll('.calendar .day');
-      days.forEach(day => {
-        day.addEventListener('click', () => {
-          const eventText = prompt('Enter an event for this day:');
-          if (eventText) {
-            const eventDiv = document.createElement('div');
-            eventDiv.classList.add('event');
-            eventDiv.textContent = eventText;
-            day.appendChild(eventDiv);
-            
-            // Get the current year and month
-            const currentYear = new Date().getFullYear();
-            const currentMonth = Array.from(day.parentNode.parentNode.children).indexOf(day.parentNode);
-            
-            // Store the event in the events object
-            if (!events[currentYear]) events[currentYear] = {};
-            if (!events[currentYear][currentMonth]) events[currentYear][currentMonth] = {};
-            if (!events[currentYear][currentMonth][day.textContent]) events[currentYear][currentMonth][day.textContent] = [];
-            events[currentYear][currentMonth][day.textContent].push(eventText);
-          }
-        });
-        
-        day.addEventListener('contextmenu', e => {
-          e.preventDefault();
-          const eventElements = day.querySelectorAll('.event');
-          if (eventElements.length > 0) {
-            const clickedEvent = e.target.closest('.event');
-            if (clickedEvent) {
-              const confirmRemove = confirm('Are you sure you want to remove this event?');
-              if (confirmRemove) {
-                clickedEvent.remove();
-                
-                // Remove the event from the events object
-                const eventText = clickedEvent.textContent;
-                const eventDay = day.textContent;
-                const eventMonth = Array.from(day.parentNode.parentNode.children).indexOf(day.parentNode);
-                const eventYear = new Date().getFullYear();
-                if (events[eventYear] && events[eventYear][eventMonth] && events[eventYear][eventMonth][eventDay]) {
-                  const index = events[eventYear][eventMonth][eventDay].indexOf(eventText);
-                  if (index !== -1) {
-                    events[eventYear][eventMonth][eventDay].splice(index, 1);
-                    if (events[eventYear][eventMonth][eventDay].length === 0) {
-                      delete events[eventYear][eventMonth][eventDay];
-                    }
-                    if (Object.keys(events[eventYear][eventMonth]).length === 0) {
-                      delete events[eventYear][eventMonth];
-                    }
-                    if (Object.keys(events[eventYear]).length === 0) {
-                      delete events[eventYear];
-                    }
-                  }
-                }
-              }
-            }
-          }
-        });
-      });
-    }
 
-    // Save events to cookies
-    function saveEvents() {
-      // Convert the events object to a string
-      const eventsString = JSON.stringify(events);
-
-      // Save the events string to a cookie
-      document.cookie = `calendar_events=${encodeURIComponent(eventsString)}; expires=Thu, 31 Dec 2099 23:59:59 GMT`;
-    }
-
-    // Load events from cookies
-    function loadEventsFromCookies() {
-      const cookies = document.cookie.split(';');
-      let eventsString = null;
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.startsWith('calendar_events=')) {
-          eventsString = decodeURIComponent(cookie.substring('calendar_events='.length));
-          break;
-        }
-      }
-      if (eventsString) {
-        try {
-          events = JSON.parse(eventsString);
-          renderCalendar();
-        } catch (error) {
-          console.error('Error parsing cookie:', error);
-        }
+        calendarContainer.appendChild(monthElement);
       }
     }
+
+    // Get the name of the month
+    function getMonthName(month) {
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      return months[month - 1];
+    }
+
+    // Get the number of days in a month
+    function getDaysInMonth(month) {
+      const date = new Date();
+      return new Date(date.getFullYear(), month, 0).getDate();
+    }
+
+    // Add a task
+    function addTask(month, day) {
+      const taskText = prompt('Enter task description:');
+      if (!taskText) return;
+
+      const colorCode = prompt('Enter color code for the task (e.g., red, blue, #FF0000):');
+      if (!colorCode) return;
+
+      if (!calendarData[month]) calendarData[month] = {};
+      if (!calendarData[month][day]) calendarData[month][day] = [];
+
+      calendarData[month][day].push({ text: taskText, color: colorCode });
+      createCalendar();
+    }
+
+    // Remove a task
+    function removeTask(event, month, day, task) {
+      event.preventDefault();
+      const index = calendarData[month][day].indexOf(task);
+      if (index > -1) {
+        calendarData[month][day].splice(index, 1);
+        createCalendar();
+      }
+    }
+
+    // Save the calendar data
+    function saveCalendar() {
+      localStorage.setItem('calendarData', JSON.stringify(calendarData));
+      alert('Calendar data saved successfully!');
+    }
+
+    // Create the initial calendar
+    createCalendar();
   </script>
 </body>
 </html>
