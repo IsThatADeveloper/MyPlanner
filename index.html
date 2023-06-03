@@ -85,19 +85,46 @@
       display: flex;
       align-items: center;
       margin-bottom: 5px;
+      white-space: nowrap; /* Prevent task text from wrapping */
     }
 
-    .color-code {
-      width: 20px;
-      height: 20px;
-      margin-right: 5px;
-      vertical-align: middle;
+    .task-text {
+      margin-left: 5px;
+      overflow: hidden;
+      text-overflow: ellipsis; /* Add ellipsis (...) for long task text */
+      flex: 1; /* Allow task text to take remaining space */
     }
 
     .save-button {
       display: flex;
       justify-content: center;
       margin-top: 20px;
+    }
+
+    /* Dropdown menu styles */
+    .task-options {
+      position: absolute;
+      z-index: 1;
+      background-color: #FFFFFF;
+      border: 1px solid #E0E0E0;
+      padding: 5px 0;
+      border-radius: 5px;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .task-options ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .task-options li {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .task-options li:hover {
+      background-color: #F5F5F5;
     }
   </style>
 </head>
@@ -138,7 +165,8 @@
           const dayElement = document.createElement('div');
           dayElement.classList.add('day');
           dayElement.textContent = day;
-          dayElement.addEventListener('click', () => addTask(month, day));
+          dayElement.addEventListener('contextmenu', (event) => showTaskOptions(event, month, day));
+          dayElement.addEventListener('click', (event) => addTask(event, month, day));
           daysElement.appendChild(dayElement);
 
           if (calendarData[month] && calendarData[month][day]) {
@@ -149,12 +177,11 @@
             calendarData[month][day].forEach(task => {
               const taskElement = document.createElement('div');
               taskElement.classList.add('task');
-              const colorCodeElement = document.createElement('span');
-              colorCodeElement.classList.add('color-code');
-              colorCodeElement.style.backgroundColor = task.color;
-              taskElement.appendChild(colorCodeElement);
-              taskElement.innerHTML += task.text;
-              taskElement.addEventListener('contextmenu', (event) => removeTask(event, month, day, task));
+              const taskTextElement = document.createElement('span');
+              taskTextElement.classList.add('task-text');
+              taskTextElement.textContent = task.text;
+              taskTextElement.style.color = task.color;
+              taskElement.appendChild(taskTextElement);
               taskList.appendChild(taskElement);
             });
           }
@@ -176,27 +203,70 @@
       return new Date(date.getFullYear(), month, 0).getDate();
     }
 
-    // Add a task
-    function addTask(month, day) {
-      const taskText = prompt('Enter task description:');
-      if (!taskText) return;
+    // Show task options dropdown
+    function showTaskOptions(event, month, day) {
+      event.preventDefault();
+      if (event.button === 2) { // Right-click
+        const taskElement = event.target.closest('.task');
+        if (taskElement) {
+          const taskTextElement = taskElement.querySelector('.task-text');
+          const taskText = taskTextElement.textContent;
 
-      const colorCode = prompt('Enter color code for the task (e.g., red, blue, #FF0000):');
-      if (!colorCode) return;
+          const taskOptions = document.createElement('div');
+          taskOptions.classList.add('task-options');
+          taskOptions.style.left = `${event.clientX}px`;
+          taskOptions.style.top = `${event.clientY}px`;
 
-      if (!calendarData[month]) calendarData[month] = {};
-      if (!calendarData[month][day]) calendarData[month][day] = [];
+          const optionList = document.createElement('ul');
+          const deleteOption = document.createElement('li');
+          deleteOption.textContent = 'Delete Task';
+          deleteOption.addEventListener('click', () => {
+            removeTask(month, day, taskText);
+          });
 
-      calendarData[month][day].push({ text: taskText, color: colorCode });
-      createCalendar();
+          optionList.appendChild(deleteOption);
+          taskOptions.appendChild(optionList);
+
+          document.body.appendChild(taskOptions);
+
+          // Handle click outside the dropdown to close it
+          const handleClickOutside = (e) => {
+            if (!taskOptions.contains(e.target)) {
+              document.body.removeChild(taskOptions);
+              document.removeEventListener('click', handleClickOutside);
+            }
+          };
+
+          document.addEventListener('click', handleClickOutside);
+        }
+      }
     }
 
     // Remove a task
-    function removeTask(event, month, day, task) {
+    function removeTask(month, day, taskText) {
+      if (calendarData[month] && calendarData[month][day]) {
+        calendarData[month][day] = calendarData[month][day].filter(task => task.text !== taskText);
+        if (calendarData[month][day].length === 0) {
+          delete calendarData[month][day];
+        }
+        createCalendar();
+      }
+    }
+
+    // Add a task
+    function addTask(event, month, day) {
       event.preventDefault();
-      const index = calendarData[month][day].indexOf(task);
-      if (index > -1) {
-        calendarData[month][day].splice(index, 1);
+      if (event.button !== 2) { // Only add task on left-click
+        const taskText = prompt('Enter task description:');
+        if (!taskText) return;
+
+        const colorCode = prompt('Enter color code for the task (e.g., red, blue, #FF0000):');
+        if (!colorCode) return;
+
+        if (!calendarData[month]) calendarData[month] = {};
+        if (!calendarData[month][day]) calendarData[month][day] = [];
+
+        calendarData[month][day].push({ text: taskText, color: colorCode });
         createCalendar();
       }
     }
