@@ -95,6 +95,10 @@
       flex: 1; /* Allow task text to take remaining space */
     }
 
+    .task-text.completed {
+      text-decoration: line-through; /* Add strikethrough for completed tasks */
+    }
+
     .save-button {
       display: flex;
       justify-content: center;
@@ -181,6 +185,9 @@
               taskTextElement.classList.add('task-text');
               taskTextElement.textContent = task.text;
               taskTextElement.style.color = task.color;
+              if (task.completed) {
+                taskTextElement.classList.add('completed'); // Add completed class for completed tasks
+              }
               taskElement.appendChild(taskTextElement);
               taskList.appendChild(taskElement);
             });
@@ -217,72 +224,92 @@
           taskOptions.style.left = `${event.clientX}px`;
           taskOptions.style.top = `${event.clientY}px`;
 
-          const optionList = document.createElement('ul');
+          const optionsList = document.createElement('ul');
+
+          // Add option to mark task as completed
+          const completedOption = document.createElement('li');
+          completedOption.textContent = 'Mark as completed';
+          completedOption.addEventListener('click', () => markTaskAsCompleted(month, day, taskText));
+          optionsList.appendChild(completedOption);
+
+          // Add option to delete task
           const deleteOption = document.createElement('li');
-          deleteOption.textContent = 'Delete Task';
-          deleteOption.addEventListener('click', () => {
-            removeTask(month, day, taskText);
-            if (document.body.contains(taskOptions)) {
-              document.body.removeChild(taskOptions);
+          deleteOption.textContent = 'Delete task';
+          deleteOption.addEventListener('click', () => deleteTask(month, day, taskText));
+          optionsList.appendChild(deleteOption);
+
+          taskOptions.appendChild(optionsList);
+          document.body.appendChild(taskOptions);
+
+          // Close the dropdown when clicked outside
+          document.addEventListener('click', (event) => {
+            if (!event.target.closest('.task-options')) {
+              taskOptions.remove();
             }
           });
 
-          optionList.appendChild(deleteOption);
-          taskOptions.appendChild(optionList);
-
-          document.body.appendChild(taskOptions);
-
-          // Handle click outside the dropdown to close it
-          const handleClickOutside = (e) => {
-            if (!taskOptions.contains(e.target)) {
-              if (document.body.contains(taskOptions)) {
-                document.body.removeChild(taskOptions);
-              }
-              document.removeEventListener('click', handleClickOutside);
-            }
-          };
-
-          document.addEventListener('click', handleClickOutside);
+          // Close the dropdown when an option is selected
+          optionsList.addEventListener('click', (event) => {
+            taskOptions.remove();
+          });
         }
       }
     }
 
-    // Remove a task
-    function removeTask(month, day, taskText) {
-      if (calendarData[month] && calendarData[month][day]) {
-        calendarData[month][day] = calendarData[month][day].filter(task => task.text !== taskText);
-        if (calendarData[month][day].length === 0) {
-          delete calendarData[month][day];
-        }
-        createCalendar();
-      }
-    }
-
-    // Add a task
+    // Add task to the calendar
     function addTask(event, month, day) {
-      event.preventDefault();
-      if (event.button !== 2) { // Only add task on left-click
-        const taskText = prompt('Enter task description:');
-        if (!taskText) return;
+      if (event.shiftKey) {
+        const taskText = prompt('Enter task text:');
+        if (taskText) {
+          const taskColor = prompt('Enter task color:');
+          const task = { text: taskText, color: taskColor, completed: false };
 
-        const colorCode = prompt('Enter color code for the task (e.g., red, blue, #FF0000):');
-        if (!colorCode) return;
+          if (!calendarData[month]) {
+            calendarData[month] = {};
+          }
 
-        if (!calendarData[month]) calendarData[month] = {};
-        if (!calendarData[month][day]) calendarData[month][day] = [];
+          if (!calendarData[month][day]) {
+            calendarData[month][day] = [];
+          }
 
-        calendarData[month][day].push({ text: taskText, color: colorCode });
-        createCalendar();
+          calendarData[month][day].push(task);
+
+          createCalendar();
+        }
       }
     }
 
-    // Save the calendar data
+    // Mark task as completed
+    function markTaskAsCompleted(month, day, taskText) {
+      if (calendarData[month] && calendarData[month][day]) {
+        const tasks = calendarData[month][day];
+        const taskIndex = tasks.findIndex(task => task.text === taskText);
+        if (taskIndex !== -1) {
+          tasks[taskIndex].completed = true;
+          createCalendar();
+        }
+      }
+    }
+
+    // Delete task
+    function deleteTask(month, day, taskText) {
+      if (calendarData[month] && calendarData[month][day]) {
+        const tasks = calendarData[month][day];
+        const taskIndex = tasks.findIndex(task => task.text === taskText);
+        if (taskIndex !== -1) {
+          tasks.splice(taskIndex, 1);
+          createCalendar();
+        }
+      }
+    }
+
+    // Save the calendar data to local storage
     function saveCalendar() {
       localStorage.setItem('calendarData', JSON.stringify(calendarData));
-      alert('Calendar data saved successfully!');
+      alert('Calendar saved!');
     }
 
-    // Create the initial calendar
+    // Initialize the calendar
     createCalendar();
   </script>
 </body>
