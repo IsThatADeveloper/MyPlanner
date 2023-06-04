@@ -314,6 +314,14 @@
 
     // Create the initial calendar
     createCalendar();
+
+    // Close the task options dropdown when the dropdown is used
+    document.addEventListener('click', (event) => {
+      const taskOptions = document.querySelector('.task-options');
+      if (taskOptions) {
+        taskOptions.remove();
+      }
+    });
   </script>
 </body>
 </html>
