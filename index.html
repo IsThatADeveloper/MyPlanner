@@ -95,8 +95,8 @@
       flex: 1; /* Allow task text to take remaining space */
     }
 
-    .task-text.completed {
-      text-decoration: line-through; /* Add strikethrough for completed tasks */
+    .completed {
+      text-decoration: line-through;
     }
 
     .save-button {
@@ -181,13 +181,13 @@
             calendarData[month][day].forEach(task => {
               const taskElement = document.createElement('div');
               taskElement.classList.add('task');
+              if (task.completed) {
+                taskElement.classList.add('completed');
+              }
               const taskTextElement = document.createElement('span');
               taskTextElement.classList.add('task-text');
               taskTextElement.textContent = task.text;
               taskTextElement.style.color = task.color;
-              if (task.completed) {
-                taskTextElement.classList.add('completed'); // Add completed class for completed tasks
-              }
               taskElement.appendChild(taskTextElement);
               taskList.appendChild(taskElement);
             });
@@ -224,92 +224,95 @@
           taskOptions.style.left = `${event.clientX}px`;
           taskOptions.style.top = `${event.clientY}px`;
 
-          const optionsList = document.createElement('ul');
-
-          // Add option to mark task as completed
-          const completedOption = document.createElement('li');
-          completedOption.textContent = 'Mark as completed';
-          completedOption.addEventListener('click', () => markTaskAsCompleted(month, day, taskText));
-          optionsList.appendChild(completedOption);
-
-          // Add option to delete task
+          const optionList = document.createElement('ul');
+          const editOption = document.createElement('li');
+          editOption.textContent = 'Edit';
+          editOption.addEventListener('click', () => editTask(month, day, taskText));
           const deleteOption = document.createElement('li');
-          deleteOption.textContent = 'Delete task';
+          deleteOption.textContent = 'Delete';
           deleteOption.addEventListener('click', () => deleteTask(month, day, taskText));
-          optionsList.appendChild(deleteOption);
+          const strikethroughOption = document.createElement('li');
+          strikethroughOption.textContent = 'Strikethrough';
+          strikethroughOption.addEventListener('click', () => strikethroughTask(month, day, taskText));
+          optionList.appendChild(editOption);
+          optionList.appendChild(deleteOption);
+          optionList.appendChild(strikethroughOption);
+          taskOptions.appendChild(optionList);
 
-          taskOptions.appendChild(optionsList);
           document.body.appendChild(taskOptions);
 
-          // Close the dropdown when clicked outside
+          // Close the task options dropdown when clicking outside
           document.addEventListener('click', (event) => {
             if (!event.target.closest('.task-options')) {
               taskOptions.remove();
             }
           });
-
-          // Close the dropdown when an option is selected
-          optionsList.addEventListener('click', (event) => {
-            taskOptions.remove();
-          });
         }
       }
     }
 
-    // Add task to the calendar
+    // Add a task
     function addTask(event, month, day) {
-      if (event.shiftKey) {
-        const taskText = prompt('Enter task text:');
-        if (taskText) {
-          const taskColor = prompt('Enter task color:');
-          const task = { text: taskText, color: taskColor, completed: false };
+      const taskText = prompt('Enter a task:');
+      if (taskText) {
+        const taskColor = prompt('Enter a color for the task (e.g., red, #FF0000):');
+        const task = { text: taskText, color: taskColor, completed: false };
 
-          if (!calendarData[month]) {
-            calendarData[month] = {};
-          }
+        if (!calendarData[month]) {
+          calendarData[month] = {};
+        }
 
-          if (!calendarData[month][day]) {
-            calendarData[month][day] = [];
-          }
+        if (!calendarData[month][day]) {
+          calendarData[month][day] = [];
+        }
 
-          calendarData[month][day].push(task);
+        calendarData[month][day].push(task);
 
+        createCalendar();
+      }
+    }
+
+    // Edit a task
+    function editTask(month, day, taskText) {
+      const newTaskText = prompt('Edit task:', taskText);
+      if (newTaskText) {
+        const taskList = calendarData[month][day];
+        const taskIndex = taskList.findIndex(task => task.text === taskText);
+        if (taskIndex > -1) {
+          taskList[taskIndex].text = newTaskText;
           createCalendar();
         }
       }
     }
 
-    // Mark task as completed
-    function markTaskAsCompleted(month, day, taskText) {
-      if (calendarData[month] && calendarData[month][day]) {
-        const tasks = calendarData[month][day];
-        const taskIndex = tasks.findIndex(task => task.text === taskText);
-        if (taskIndex !== -1) {
-          tasks[taskIndex].completed = true;
-          createCalendar();
-        }
-      }
-    }
-
-    // Delete task
+    // Delete a task
     function deleteTask(month, day, taskText) {
-      if (calendarData[month] && calendarData[month][day]) {
-        const tasks = calendarData[month][day];
-        const taskIndex = tasks.findIndex(task => task.text === taskText);
-        if (taskIndex !== -1) {
-          tasks.splice(taskIndex, 1);
-          createCalendar();
-        }
+      const taskList = calendarData[month][day];
+      const taskIndex = taskList.findIndex(task => task.text === taskText);
+      if (taskIndex > -1) {
+        taskList.splice(taskIndex, 1);
+        createCalendar();
       }
     }
 
-    // Save the calendar data to local storage
+    // Strikethrough a task
+    function strikethroughTask(month, day, taskText) {
+      const taskList = calendarData[month][day];
+      const taskIndex = taskList.findIndex(task => task.text === taskText);
+      if (taskIndex > -1) {
+        const taskElement = taskList[taskIndex];
+        taskElement.completed = !taskElement.completed;
+        createCalendar();
+      }
+    }
+
+    // Save the calendar data to localStorage
     function saveCalendar() {
       localStorage.setItem('calendarData', JSON.stringify(calendarData));
-      alert('Calendar saved!');
+      alert('Calendar data saved!');
     }
 
-    // Initialize the calendar
+    // Create the initial calendar
     createCalendar();
   </script>
 </body>
