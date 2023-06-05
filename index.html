@@ -1,345 +1,208 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My Planner</title>
+  <title>Notes Page</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
+      padding: 20px;
       overflow: hidden;
     }
 
-    .animated-background {
+    .background-animation {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
       z-index: -1;
+      animation: background-animation 20s infinite;
       background-image: url("https://wallpaper.dog/large/822006.jpg");
       background-repeat: no-repeat;
       background-size: cover;
-      animation: backgroundAnimation 20s infinite linear;
     }
 
-    @keyframes backgroundAnimation {
+    @keyframes background-animation {
       0% {
-        background-position: 0% 0%;
+        transform: scale(1);
       }
       50% {
-        background-position: 100% 100%;
+        transform: scale(1.1);
       }
       100% {
-        background-position: 0% 0%;
+        transform: scale(1);
       }
-    }
-
-    .calendar {
-      max-width: 800px;
-      margin: 0 auto;
-      background-color: #FFFFFF;
-      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      border-radius: 5px;
-      overflow-y: auto;
-      height: calc(100vh - 40px); /* Adjust the height to fit the screen */
     }
 
     h1 {
       text-align: center;
-      margin-bottom: 20px;
     }
 
-    .month {
-      margin-bottom: 20px;
+    #notes {
+      width: 100%;
+      height: 300px;
+      resize: vertical;
+      border-radius: 6px;
     }
 
-    .month-name {
-      font-size: 20px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    .days {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 5px;
-    }
-
-    .day {
-      border: 1px solid #E0E0E0;
-      padding: 10px;
-      text-align: center;
-    }
-
-    .day:hover {
-      background-color: #F5F5F5;
-      cursor: pointer;
-    }
-
-    .task-list {
+    #saveButton {
       margin-top: 10px;
-    }
-
-    .task {
-      display: flex;
-      align-items: center;
-      margin-bottom: 5px;
-      white-space: nowrap; /* Prevent task text from wrapping */
-    }
-
-    .task-text {
-      margin-left: 5px;
-      overflow: hidden;
-      text-overflow: ellipsis; /* Add ellipsis (...) for long task text */
-      flex: 1; /* Allow task text to take remaining space */
-    }
-
-    .completed {
-      text-decoration: line-through;
-    }
-
-    .save-button {
-      display: flex;
-      justify-content: flex-start;
-      margin-top: 20px;
-      height: 20px;
-      width: 40px;
-      border-radius: 10px;
       background-color: white;
-      padding: 0;
+      border-radius: 10px;
+      height: 20px;
+      width: 50px;
     }
 
-
-    /* Dropdown menu styles */
-    .task-options {
-      position: absolute;
-      z-index: 1;
-      background-color: #FFFFFF;
-      border: 1px solid #E0E0E0;
-      padding: 5px 0;
+    #backButton {
+      margin-top: 10px;
+      background-color: white;
       border-radius: 10px;
-      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+      height: 20px;
+      width: 50px;
+    }
+
+    #savedNotes {
+      margin-top: 20px;
       border-radius: 5px;
     }
 
-    .task-options ul {
-      list-style-type: none;
-      padding: 0;
-      margin: 0;
+    .note {
+      background-color: #f5f5f5;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      opacity: 0;
+      animation: fade-in 0.5s forwards;
+      position: relative; /* Added position relative */
+      border-radius: 8px;
     }
 
-    .task-options li {
+    @keyframes fade-in {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+
+    .deleteButton {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background-color: #f44336;
+      color: #fff;
+      border: none;
+      border-radius: 100%;
       padding: 5px;
       cursor: pointer;
     }
 
-    .task-options li:hover {
-      background-color: #E0E0E0;
-      border-radius: 8px;
-      padding: 5px;
-    }
   </style>
 </head>
 <body>
-  <div class="animated-background"></div>
-  <div class="calendar">
-    <h1><b>My Planner<b></h1>
-    <div class="save-button">
-      <button onclick="openNotes()">Notes</button>
-    </div>
-    <div class="save-button">
-      <button onclick="saveCalendar()">Save</button>
-    </div>
-    <br>
-    <div id="calendar-container"></div>
-  </div>
+  <h1>Notes</h1>
+  
+  <textarea id="notes" placeholder="Write your notes here..."></textarea>
+  <button id="saveButton">Save</button>
+  <button id="backButton">Back</button>
+
+  <div id="savedNotes"></div>
+
+  <div class="background-animation"></div>
 
   <script>
-    // Check if there is saved calendar data
-    const savedCalendar = localStorage.getItem('calendarData');
-    let calendarData = savedCalendar ? JSON.parse(savedCalendar) : {};
+    // Load saved notes from local storage
+    window.addEventListener('load', function() {
+      loadNotes();
+    });
 
-    // Create the calendar
-    function createCalendar() {
-      const calendarContainer = document.getElementById('calendar-container');
-      calendarContainer.innerHTML = '';
-
-      for (let month = 1; month <= 12; month++) {
-        const monthElement = document.createElement('div');
-        monthElement.classList.add('month');
-
-        const monthNameElement = document.createElement('div');
-        monthNameElement.classList.add('month-name');
-        monthNameElement.textContent = getMonthName(month);
-        monthElement.appendChild(monthNameElement);
-
-        const daysElement = document.createElement('div');
-        daysElement.classList.add('days');
-        monthElement.appendChild(daysElement);
-
-        for (let day = 1; day <= getDaysInMonth(month); day++) {
-          const dayElement = document.createElement('div');
-          dayElement.classList.add('day');
-          dayElement.textContent = day;
-          dayElement.addEventListener('contextmenu', (event) => showTaskOptions(event, month, day));
-          dayElement.addEventListener('click', (event) => addTask(event, month, day));
-          daysElement.appendChild(dayElement);
-
-          if (calendarData[month] && calendarData[month][day]) {
-            const taskList = document.createElement('div');
-            taskList.classList.add('task-list');
-            dayElement.appendChild(taskList);
-
-            calendarData[month][day].forEach(task => {
-              const taskElement = document.createElement('div');
-              taskElement.classList.add('task');
-              if (task.completed) {
-                taskElement.classList.add('completed');
-              }
-              const taskTextElement = document.createElement('span');
-              taskTextElement.classList.add('task-text');
-              taskTextElement.textContent = task.text;
-              taskTextElement.style.color = task.color;
-              taskElement.appendChild(taskTextElement);
-              taskList.appendChild(taskElement);
-            });
-          }
-        }
-
-        calendarContainer.appendChild(monthElement);
-      }
-    }
-
-    // Get the name of the month
-    function getMonthName(month) {
-      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-      return months[month - 1];
-    }
-
-    // Get the number of days in a month
-    function getDaysInMonth(month) {
-      const date = new Date();
-      return new Date(date.getFullYear(), month, 0).getDate();
-    }
-
-    // Show task options dropdown
-    function showTaskOptions(event, month, day) {
-      event.preventDefault();
-      if (event.button === 2) { // Right-click
-        const taskElement = event.target.closest('.task');
-        if (taskElement) {
-          const taskTextElement = taskElement.querySelector('.task-text');
-          const taskText = taskTextElement.textContent;
-
-          const taskOptions = document.createElement('div');
-          taskOptions.classList.add('task-options');
-          taskOptions.style.left = `${event.clientX}px`;
-          taskOptions.style.top = `${event.clientY}px`;
-
-          const optionList = document.createElement('ul');
-          const editOption = document.createElement('li');
-          editOption.textContent = 'Edit';
-          editOption.addEventListener('click', () => editTask(month, day, taskText));
-          const deleteOption = document.createElement('li');
-          deleteOption.textContent = 'Delete';
-          deleteOption.addEventListener('click', () => deleteTask(month, day, taskText));
-          const strikethroughOption = document.createElement('li');
-          strikethroughOption.textContent = 'Strikethrough';
-          strikethroughOption.addEventListener('click', () => strikethroughTask(month, day, taskText));
-          optionList.appendChild(editOption);
-          optionList.appendChild(deleteOption);
-          optionList.appendChild(strikethroughOption);
-          taskOptions.appendChild(optionList);
-
-          document.body.appendChild(taskOptions);
-
-          // Close the task options dropdown when clicking outside
-          document.addEventListener('click', (event) => {
-            if (!event.target.closest('.task-options')) {
-              taskOptions.remove();
-            }
-          });
-        }
-      }
-    }
-
-    // Add a task
-    function addTask(event, month, day) {
-      const taskText = prompt('Enter a task:');
-      if (taskText) {
-        const taskColor = prompt('Enter a color for the task (e.g., red, #FF0000):');
-        const task = { text: taskText, color: taskColor, completed: false };
-
-        if (!calendarData[month]) {
-          calendarData[month] = {};
-        }
-
-        if (!calendarData[month][day]) {
-          calendarData[month][day] = [];
-        }
-
-        calendarData[month][day].push(task);
-
-        createCalendar();
-      }
-    }
-
-    // Edit a task
-    function editTask(month, day, taskText) {
-      const newTaskText = prompt('Edit task:', taskText);
-      if (newTaskText) {
-        const taskList = calendarData[month][day];
-        const taskIndex = taskList.findIndex(task => task.text === taskText);
-        if (taskIndex > -1) {
-          taskList[taskIndex].text = newTaskText;
-          createCalendar();
-        }
-      }
-    }
-
-    // Delete a task
-    function deleteTask(month, day, taskText) {
-      const taskList = calendarData[month][day];
-      const taskIndex = taskList.findIndex(task => task.text === taskText);
-      if (taskIndex > -1) {
-        taskList.splice(taskIndex, 1);
-        createCalendar();
-      }
-    }
-
-    // Strikethrough a task
-    function strikethroughTask(month, day, taskText) {
-      const taskList = calendarData[month][day];
-      const taskIndex = taskList.findIndex(task => task.text === taskText);
-      if (taskIndex > -1) {
-        const taskElement = taskList[taskIndex];
-        taskElement.completed = !taskElement.completed;
-        createCalendar();
-      }
-    }
-
-    // Save the calendar data to localStorage
-    function saveCalendar() {
-      localStorage.setItem('calendarData', JSON.stringify(calendarData));
-      alert('Calendar data saved!');
-    }
-
-    // Create the initial calendar
-    createCalendar();
-
-    // Close the task options dropdown when the dropdown is used
-    document.addEventListener('click', (event) => {
-      const taskOptions = document.querySelector('.task-options');
-      if (taskOptions) {
-        taskOptions.remove();
+    // Save note to local storage and update the saved notes display
+    document.getElementById('saveButton').addEventListener('click', function() {
+      var note = document.getElementById('notes').value;
+      if (note.trim() !== '') {
+        saveNoteToLocalStorage(note);
+        displaySavedNotes();
+        clearNoteInput();
       }
     });
-    
-    // Opens Notes
-    function openNotes() {
-      window.location.href = "notes.html";
+
+    // Back button event listener
+    document.getElementById('backButton').addEventListener('click', function() {
+      window.location.href = 'planner.html'; // Redirect to planner.html
+    });
+
+    // Save note to local storage
+    function saveNoteToLocalStorage(note) {
+      var notes = localStorage.getItem('notes');
+      if (notes === null) {
+        notes = [];
+      } else {
+        notes = JSON.parse(notes);
+      }
+      notes.push(note);
+      localStorage.setItem('notes', JSON.stringify(notes));
     }
+
+    // Load saved notes from local storage
+    function loadNotes() {
+      var notes = localStorage.getItem('notes');
+      if (notes !== null) {
+        notes = JSON.parse(notes);
+        for (var i = 0; i < notes.length; i++) {
+          createNoteElement(notes[i]);
+        }
+      }
+    }
+
+    // Display saved notes on the page
+    function displaySavedNotes() {
+      var savedNotesDiv = document.getElementById('savedNotes');
+      savedNotesDiv.innerHTML = '';
+      var notes = localStorage.getItem('notes');
+      if (notes !== null) {
+        notes = JSON.parse(notes);
+        for (var i = 0; i < notes.length; i++) {
+          createNoteElement(notes[i]);
+        }
+      }
+    }
+
+    // Create a note element and append it to the saved notes display
+    function createNoteElement(noteText) {
+      var noteDiv = document.createElement('div');
+      noteDiv.className = 'note';
+      noteDiv.textContent = noteText;
+      var deleteButton = document.createElement('button');
+      deleteButton.className = 'deleteButton';
+      deleteButton.textContent = 'X';
+      deleteButton.addEventListener('click', function() {
+        deleteNoteFromLocalStorage(noteText);
+        noteDiv.remove();
+      });
+      noteDiv.appendChild(deleteButton);
+      document.getElementById('savedNotes').appendChild(noteDiv);
+    }
+
+    // Delete note from local storage
+    function deleteNoteFromLocalStorage(note) {
+      var notes = localStorage.getItem('notes');
+      if (notes !== null) {
+        notes = JSON.parse(notes);
+        var index = notes.indexOf(note);
+        if (index !== -1) {
+          notes.splice(index, 1);
+          localStorage.setItem('notes', JSON.stringify(notes));
+        }
+      }
+    }
+
+    // Clear the note input textarea
+    function clearNoteInput() {
+      document.getElementById('notes').value = '';
+    }
+
   </script>
 </body>
 </html>
