@@ -54,6 +54,14 @@
       width: 50px;
     }
 
+    #backButton {
+      margin-top: 10px;
+      background-color: white;
+      border-radius: 10px;
+      height: 20px;
+      width: 50px;
+    }
+
     #savedNotes {
       margin-top: 20px;
       border-radius: 5px;
@@ -95,9 +103,10 @@
 </head>
 <body>
   <h1>Notes</h1>
-
+  
   <textarea id="notes" placeholder="Write your notes here..."></textarea>
   <button id="saveButton">Save</button>
+  <button id="backButton">Back</button>
 
   <div id="savedNotes"></div>
 
@@ -117,6 +126,11 @@
         displaySavedNotes();
         clearNoteInput();
       }
+    });
+
+    // Back button event listener
+    document.getElementById('backButton').addEventListener('click', function() {
+      window.location.href = 'planner.html'; // Redirect to planner.html
     });
 
     // Save note to local storage
@@ -188,6 +202,7 @@
     function clearNoteInput() {
       document.getElementById('notes').value = '';
     }
+
   </script>
 </body>
 </html>
