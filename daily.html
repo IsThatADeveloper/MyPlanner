@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Daily Routine Planner</title>
+  <style>
+    body {
+      background-color: #f2f2f2;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      position: relative;
+      animation: fadeIn 2s;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333333;
+    }
+
+    #routine-list {
+      margin-top: 20px;
+    }
+
+    .routine {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .routine input[type="time"] {
+      margin-right: 10px;
+    }
+
+    .routine button {
+      margin-left: 10px;
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #save-button {
+      background-color: #2196F3;
+    }
+
+    #test-email-button {
+      background-color: #FF9800;
+    }
+
+    .success-message {
+      color: green;
+      margin-top: 10px;
+    }
+
+    .error-message {
+      color: red;
+      margin-top: 10px;
+    }
+
+    .animation {
+      animation: fadein 2s;
+    }
+
+    @keyframes fadein {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* Animated Background */
+    body:before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('https://img.freepik.com/free-vector/gradient-japanese-temple-with-sun_52683-44985.jpg?w=2000');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.5;
+      z-index: -1;
+      animation: animatedBackground 20s linear infinite;
+    }
+
+    @keyframes animatedBackground {
+      0% { background-position: 0 0; }
+      50% { background-position: 100% 0; }
+      100% { background-position: 0 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container animation">
+    <h1>Daily Routine Planner</h1>
+    <div id="routine-list">
+      <!-- Routines will be dynamically added here -->
+    </div>
+    <div>
+      <button id="add-routine-button">Add Routine</button>
+      <button id="save-button">Save</button>
+      <button id="test-email-button">Test Email</button>
+    </div>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    // Check if local storage has saved routines
+    let routines = JSON.parse(localStorage.getItem("routines")) || [];
+
+    // Render saved routines on page load
+    renderRoutines();
+
+    // Event listener for add routine button
+    document.getElementById("add-routine-button").addEventListener("click", function() {
+      createRoutineInput();
+    });
+
+    // Event listener for save button
+    document.getElementById("save-button").addEventListener("click", function() {
+      saveRoutines();
+      showMessage("Routines saved successfully!", "success");
+    });
+
+    // Event listener for test email button
+    document.getElementById("test-email-button").addEventListener("click", function() {
+      sendEmail();
+    });
+
+    // Function to create a new routine input
+    function createRoutineInput(time = "", task = "") {
+      const routineList = document.getElementById("routine-list");
+
+      const routineContainer = document.createElement("div");
+      routineContainer.classList.add("routine");
+
+      const timeInput = document.createElement("input");
+      timeInput.type = "time";
+      timeInput.value = time;
+      routineContainer.appendChild(timeInput);
+
+      const taskInput = document.createElement("input");
+      taskInput.type = "text";
+      taskInput.value = task;
+      routineContainer.appendChild(taskInput);
+
+      const deleteButton = document.createElement("button");
+      deleteButton.textContent = "Delete";
+      deleteButton.addEventListener("click", function() {
+        routineList.removeChild(routineContainer);
+      });
+      routineContainer.appendChild(deleteButton);
+
+      routineList.appendChild(routineContainer);
+    }
+
+    // Function to render saved routines
+    function renderRoutines() {
+      routines.forEach(routine => {
+        createRoutineInput(routine.time, routine.task);
+      });
+    }
+
+    // Function to save routines in local storage
+    function saveRoutines() {
+      const routineInputs = document.querySelectorAll(".routine");
+      const newRoutines = [];
+
+      routineInputs.forEach(routine => {
+        const timeInput = routine.querySelector("input[type='time']");
+        const taskInput = routine.querySelector("input[type='text']");
+
+        newRoutines.push({
+          time: timeInput.value,
+          task: taskInput.value
+        });
+      });
+
+      routines = newRoutines;
+      localStorage.setItem("routines", JSON.stringify(routines));
+    }
+
+    // Function to send the routine email
+    function sendEmail() {
+      const email = "eshaanshah24@gmail.com";
+      const subject = "Daily Routine";
+      let body = "";
+
+      routines.forEach(routine => {
+        body += routine.time + " - " + routine.task + "\n";
+      });
+
+      const mailtoLink = "mailto:" + email + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      window.location.href = mailtoLink;
+    }
+
+    // Function to show messages
+    function showMessage(message, type) {
+      const messageDiv = document.getElementById("message");
+
+      messageDiv.textContent = message;
+      messageDiv.classList.remove("success-message", "error-message");
+
+      if (type === "success") {
+        messageDiv.classList.add("success-message");
+      } else if (type === "error") {
+        messageDiv.classList.add("error-message");
+      }
+    }
+  </script>
+</body>
+</html>
